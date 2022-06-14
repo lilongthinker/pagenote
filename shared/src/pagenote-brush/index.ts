@@ -7,8 +7,9 @@ export enum LightStatus {
 }
 
 export enum LightType {
-    highlight='light',
-    deleteLine='del',
+    highlight='light', // 背景涂色
+    deleteLine='del', // 删除线
+    bold='bold', // 加粗
 }
 
 export interface Brush {
@@ -22,14 +23,14 @@ export interface Brush {
     score?: number // 权重分数，1-10
 }
 
-export function getDefaultBrush():Brush {
+export function getDefaultBrush(brush: Partial<Brush>={}):Brush {
     return{
-        bg: '#FFDE5D',
-        shortcut: '',
-        label: '标记',
-        level: 1,
-        color: '',
-        lightType: LightType.highlight,
-        defaultStatus: LightStatus.full_light
+        bg: brush.bg || '#FFDE5D',
+        shortcut: brush.shortcut || '',
+        label: brush.label || '标记',
+        level: brush.level || 1,
+        color: brush.color || '',
+        lightType: brush.lightType || LightType.highlight,
+        defaultStatus: brush.defaultStatus || LightStatus.full_light
     }
 }

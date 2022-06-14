@@ -1,12 +1,11 @@
-import {BackupData, WebPage} from "./@types/data";
-import {Find, Pagination, Projection, Query} from "./@types/database";
+import {BackupData, FileData, ResourceInfo, WebPage} from "./@types/data";
+import {Find, Pagination, Query} from "./@types/database";
 import {BaseMessageResponse, IBaseMessageListener, IExtenstionMessageListener} from "./communication/base";
 import {AxiosRequestConfig, AxiosResponse} from "axios";
 import {Action, ACTION_TYPES} from "./pagenote-actions/@types";
-import {ConvertMethod, getDefaultConvertMethod, METHOD_NUM} from "./pagenote-convert";
+import {ConvertMethod, getDefaultConvertMethod} from "./pagenote-convert";
 import {Brush, getDefaultBrush, LightStatus, LightType} from "./pagenote-brush";
 import {createInitAction} from "./pagenote-actions";
-import {PredefinedSchema} from "./pagenote-convert/predefined";
 
 type ComputeRequestToBackground<Funs extends Record<string, IBaseMessageListener<any, any, any>>> = {
     [fun in keyof Funs] : {
@@ -163,43 +162,49 @@ export namespace setting{
     export type request = ComputeRequestToBackground<response>
 
     export function getDefaultSdkSetting(originSetting:Partial<SDK_SETTING>={}):SDK_SETTING {
-        const defaultBrushes = [{
-            bg: '#FFDE5D',
-            shortcut: '',
-            label: '标记',
-            level: 1,
-            color: '',
-            lightType: LightType.highlight,
-            defaultStatus: LightStatus.full_light
-        },{
-            bg: '#5dbead',
-            shortcut: '',
-            label: '删除线',
-            level: 1,
-            color: '',
-            lightType: LightType.deleteLine,
-            defaultStatus: LightStatus.un_light
-        },{
-            bg: '#4467a8',
-            shortcut: 'b',
-            label: '删除线',
-            level: 1,
-            color: '',
-            lightType: LightType.highlight,
-            defaultStatus: LightStatus.half_light
-        },{
-            bg: '#2a7544',
-            shortcut: '',
-            label: '绿色无快捷键',
-            level: 1,
-            color: '',
-            lightType: LightType.highlight,
-            defaultStatus: LightStatus.half_light
-        }]
+        const defaultBrushes = [
+            getDefaultBrush({
+                bg: '#FFFF83',
+            }),
+            getDefaultBrush({
+                bg: '#A6FFE9',
+                label: '删除线',
+                lightType: LightType.deleteLine,
+                defaultStatus: LightStatus.un_light
+            }),
+            getDefaultBrush({
+                bg: '#FFC7BA',
+                defaultStatus: LightStatus.full_light
+            }),
+            getDefaultBrush({
+                bg: '#B8EEFF',
+                defaultStatus: LightStatus.half_light
+            }),
+            getDefaultBrush({
+                bg: '#FFD0EF',
+                defaultStatus: LightStatus.half_light
+            }),
+            getDefaultBrush({
+                bg: '#D9C3FF',
+                defaultStatus: LightStatus.half_light
+            }),
+            getDefaultBrush({
+                bg: '#a64db4',
+                defaultStatus: LightStatus.half_light
+            }),
+            getDefaultBrush({
+                bg: '#195772',
+                defaultStatus: LightStatus.half_light
+            }),
+            getDefaultBrush({
+                bg: '#4467a8',
+                defaultStatus: LightStatus.half_light
+            }),
+        ]
         const setting : SDK_SETTING = {
             // _libra: false,
             // _sync: false,
-            actions: [createInitAction(ACTION_TYPES.search)],
+            actions: [createInitAction(ACTION_TYPES.search),createInitAction(ACTION_TYPES.copyToClipboard),createInitAction(ACTION_TYPES.send_to_email)],
             autoBackup: 3600 * 24 * 7,
             brushes: defaultBrushes,
             commonSetting: {
@@ -215,7 +220,7 @@ export namespace setting{
             convertMethods: [getDefaultConvertMethod()],
             lastModified: 0,
             sdkVersion: "5.5.3",
-            extVersion: '0.20.22',
+            extVersion: '0.20.23',
             dataVersion: SDK_VERSION.ts_format,
             useRecommend: true
         }
@@ -253,7 +258,7 @@ export namespace browserAction{
     export type request = ComputeRequestToBackground<response>
 }
 
-export namespace action{
+export namespace action {
     import CaptureVisibleTabOptions = chrome.tabs.CaptureVisibleTabOptions;
     export const id = 'action'
     export interface injectParams {
@@ -338,46 +343,15 @@ export namespace localdir{
 
 export namespace fileDB{
     export const id = 'fileDB'
-    type FileData = Blob | string | null
-    export enum SaveAsTypes {
-        'string'='string',
-        'blob' ='blob'
-    }
-
-    export enum ContentType {
-        png='image/png',
-        jpeg='image/jpeg',
-        html='text/html',
-        text='text/plain',
-        css='text/css',
-        json='application/json',
-        javascript='application/javascript',
-
-    }
-
-    export interface FileInfo {
-        originURI: string, // 资源原始URI地址，如 img 本地持久化的原始URL
-        localURI: string, // 本地资源URI
-        relatedUrl: string, // 资源产生地址
-        sourceTag: string, // 资源标签，用于过滤类型，如缩略图 thumb、snapshot、等。
-        domain: string, // 域名
-        data: FileData, // 数据
-        saveAs: SaveAsTypes // 本地资源存储类型
-        contentType: ContentType, // 文件类型
-        contentLength?: number, // 资源size
-        createAt: number,
-        lastModified?: string,
-        ETag?: string,
-        [key:string]: any,
-    }
-
     export interface response {
         /**新建或更新*/
-        saveFile: IExtenstionMessageListener<{info:FileInfo,upsert: boolean},FileInfo|undefined>
+        saveFile: IExtenstionMessageListener<{info:ResourceInfo,upsert: boolean},ResourceInfo|undefined>
         /**查询资源*/
-        getFiles: IExtenstionMessageListener<Partial<FileInfo>,FileData[]>
+        getFile: IExtenstionMessageListener<Partial<ResourceInfo>,FileData>
+        /**查询资源（不含文件数据）*/
+        getFiles: IExtenstionMessageListener<Partial<ResourceInfo>,Omit<FileData, 'data'>[]>
         /**删除资源*/
-        removeFiles: IExtenstionMessageListener<Partial<FileInfo>, { deleteCnt:number }>
+        removeFiles: IExtenstionMessageListener<Partial<ResourceInfo>, { deleteCnt:number }>
         [key:string]: IExtenstionMessageListener<any, any>
     }
     export type request = ComputeRequestToBackground<response>
